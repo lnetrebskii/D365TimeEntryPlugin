@@ -1,0 +1,7 @@
+/src/.vs
+/src/packages
+/src/TimeEntryPlugin.sln.DotSettings.user
+/src/TimeEntryPlugin/bin
+/src/TimeEntryPlugin/obj
+/src/TimeEntryPlugin.Tests/obj
+/src/TimeEntryPlugin.Tests/bin

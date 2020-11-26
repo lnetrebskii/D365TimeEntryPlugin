@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TimeEntryPlugin
 {
+	/// <summary>
+	/// General utility methods
+	/// </summary>
 	internal static class Helper
 	{
 		internal const string Target = "Target";
