@@ -19,6 +19,7 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      ls $(Pipeline.Workspace)
       $Encrypted = ConvertTo-SecureString "123456" -AsPlainText -Force
       Import-PfxCertificate -FilePath $(Pipeline.Workspace)\D365TimeEntryPlugin\src\TimeEntryPlugin\leonidn-key-123456.pfx -CertStoreLocation Cert:\LocalMachine\My -Password $Encrypted
 
