@@ -19,7 +19,7 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      $Encrypted = ConvertFrom-SecureString -SecureString 123456
+      $Encrypted = ConvertTo-SecureString "123456" -AsPlainText -Force
       Import-PfxCertificate -FilePath $(Pipeline.Workspace)\src/TimeEntryPlugin/leonidn-key-123456.pfx -CertStoreLocation Cert:\LocalMachine\My -Password $Encrypted
 
 - task: NuGetToolInstaller@1
