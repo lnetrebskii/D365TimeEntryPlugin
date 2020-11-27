@@ -10,8 +10,10 @@ On creation of a Time Entry record the plugin should evaluate if the start and e
 
 ## Follow up tasks
 - Catch update events
-- Figure out with time zones. UTC is used now.
 - Create unit tests. Integration tests are created, but they are slow.
 - Don't store signing key public
 - Implement CI/CD
 - Support multiple environments
+
+## Notes
+- EST Time zone is used to calculate dates.

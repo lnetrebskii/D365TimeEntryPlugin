@@ -24,8 +24,8 @@ namespace TimeEntryPlugin
 		/// </summary>
 		public static void Execute(Entity entity, IOrganizationService service, ITracingService tracingService)
 		{
-			var startAt = (DateTime)entity[TimeEntryAttributes.Start];
-			var endAt = (DateTime)entity[TimeEntryAttributes.End];
+			var startAt = ((DateTime)entity[TimeEntryAttributes.Start]).ToEst();
+			var endAt = ((DateTime)entity[TimeEntryAttributes.End]).ToEst();
 
 			var datesToCreate = GetDatesToCreateTimeEntries(entity, service, startAt, endAt);
 			ThrowExceptionIfAllDatesOccupied(datesToCreate);
@@ -88,8 +88,8 @@ namespace TimeEntryPlugin
 
 		private static void SetTimeEntryDate(Entity entity, DateTime date)
 		{
-			entity[TimeEntryAttributes.Start] = date;
-			entity[TimeEntryAttributes.End] = date;
+			entity[TimeEntryAttributes.Start] = date.ToUtc();
+			entity[TimeEntryAttributes.End] = date.ToUtc();
 			entity[TimeEntryAttributes.Duration] = 0;
 		}
 
@@ -109,8 +109,8 @@ namespace TimeEntryPlugin
 
 			results.Entities.ToList().ForEach(entity =>
 			{
-				var entityStartAt = (DateTime)entity[TimeEntryAttributes.Start];
-				var entityEndAt = (DateTime)entity[TimeEntryAttributes.End];
+				var entityStartAt = ((DateTime)entity[TimeEntryAttributes.Start]).ToEst();
+				var entityEndAt = ((DateTime)entity[TimeEntryAttributes.End]).ToEst();
 				dates = Helper.EachDay(entityStartAt, entityEndAt).Union(dates).Distinct().ToList();
 			});
 

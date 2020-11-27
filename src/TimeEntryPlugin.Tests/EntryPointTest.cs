@@ -13,16 +13,17 @@ namespace TimeEntryPlugin.Tests
 	public class EntryPointTest
 	{
 		[DataTestMethod]
-		[DataRow("20100630", "20100702", new string[] { }, 2, DisplayName = "In the event that the start and end date are different then a time entry record should be created for every date in the date range from start to end date")]
-		[DataRow("20100630", "20100702", new [] { "20100701" }, 1, DisplayName = "There are no duplicate time entry records created per date, 1 additional entry created.")]
-		[DataRow("20100630", "20100702", new[] { "20100630", "20100701" }, 0)]
-		[DataRow("20100630", "20100630", new string[] { }, 0, DisplayName = "In event when the start and end dates are different, than no additional entries created")]
+		[DataRow("2010-06-30T00:00:00Z", "2010-06-30T05:00:00Z", new string[] { }, 1, DisplayName = "Consider EST timezone when create Time Entries.")]
+		[DataRow("2010-06-30T05:00:00Z", "2010-07-02T05:00:00Z", new string[] { }, 2, DisplayName = "In the event that the start and end date are different then a time entry record should be created for every date in the date range from start to end date")]
+		[DataRow("2010-06-30T05:00:00Z", "2010-07-02T05:00:00Z", new [] { "2010-07-01T05:00:00Z" }, 1, DisplayName = "There are no duplicate time entry records created per date, 1 additional entry created.")]
+		[DataRow("2010-06-30T05:00:00Z", "2010-07-02T05:00:00Z", new[] { "2010-06-30T05:00:00Z", "2010-07-01T05:00:00Z" }, 0)]
+		[DataRow("2010-06-30T05:00:00Z", "2010-06-30T05:00:00Z", new string[] { }, 0, DisplayName = "In event when the start and end dates are different, than no additional entries created")]
 		public void Should_CreateAdditionalEntries_When_PeriodIncludesMoreThan2NotBookedDates(string startAtStr, string endAtStr, string[] bookedDatesStrings, int additionalEntriesNumber)
 		{
 			var startAt = ParseTestInputDateTime(startAtStr);
 			var endAt = ParseTestInputDateTime(endAtStr);
 			var bookedDates = bookedDatesStrings
-				.Select(x => ParseTestInputDateTime(x)).ToList();
+				.Select(ParseTestInputDateTime).ToList();
 
 			// Arrange
 			var fakedContext = CreateTimeEntryInContext(startAt, endAt, bookedDates, out var timeEntry, out var existingEntries);
@@ -36,8 +37,9 @@ namespace TimeEntryPlugin.Tests
 			var newEntities = result.Entities.Where(x => !existingEntries.Exists(t => t.Id == x.Id)).ToList();
 			Assert.AreEqual(additionalEntriesNumber, newEntities.Count);
 			Assert.AreEqual(timeEntry[TimeEntryAttributes.Start], timeEntry[TimeEntryAttributes.End]);
-			var entities = result.Entities.Select(x => x[TimeEntryAttributes.Start]).ToList();
-			entities.Add(timeEntry[TimeEntryAttributes.Start]);
+			var entities = result.Entities.Select(x => (DateTime)x[TimeEntryAttributes.Start]).ToList();
+			entities.Add((DateTime)timeEntry[TimeEntryAttributes.Start]);
+			entities = entities.ConvertAll(x => x.Date).ToList();
 			foreach (var day in EachDay(startAt, endAt))
 			{
 				Assert.IsTrue(entities.Contains(day));
@@ -45,8 +47,8 @@ namespace TimeEntryPlugin.Tests
 		}
 
 		[DataTestMethod]
-		[DataRow("20100630", "20100702", new[] { "20100630", "20100701", "20100702" })]
-		[DataRow("20100630", "20100630", new[] { "20100630" })]
+		[DataRow("2010-06-30T05:00:00Z", "2010-07-02T05:00:00Z", new[] { "2010-06-30T05:00:00Z", "2010-07-01T05:00:00Z", "2010-07-02T05:00:00Z" })]
+		[DataRow("2010-06-30T05:00:00Z", "2010-06-30T05:00:00Z", new[] { "2010-06-30T05:00:00Z" })]
 		public void Should_ThrowException_When_AllEntriesForPeriodOccupied(string startAtStr, string endAtStr, string[] bookedDatesStrings)
 		{
 			var startAt = ParseTestInputDateTime(startAtStr);
@@ -61,7 +63,7 @@ namespace TimeEntryPlugin.Tests
 			Assert.ThrowsException<InvalidPluginExecutionException>(() => fakedContext.ExecutePluginWithTarget(new EntryPoint(), timeEntry));
 		}
 
-		private static DateTime ParseTestInputDateTime(string x) => DateTime.ParseExact(x, "yyyyMMdd", CultureInfo.InvariantCulture);
+		private static DateTime ParseTestInputDateTime(string x) => DateTime.Parse(x).ToUniversalTime();
 
 		private static XrmFakedContext CreateTimeEntryInContext(DateTime startAt, DateTime endAt, 
 			List<DateTime> bookedDates, out Entity timeEntry, out List<Entity> existingEntries)
