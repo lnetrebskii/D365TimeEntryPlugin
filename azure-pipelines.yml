@@ -19,9 +19,8 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      ls $(Build.SourcesDirectory)
       $Encrypted = ConvertTo-SecureString "123456" -AsPlainText -Force
-      Import-PfxCertificate -FilePath $(Build.SourcesDirectory)\D365TimeEntryPlugin\src\TimeEntryPlugin\leonidn-key-123456.pfx -CertStoreLocation Cert:\LocalMachine\My -Password $Encrypted
+      Import-PfxCertificate -FilePath $(Build.SourcesDirectory)\src\TimeEntryPlugin\leonidn-key-123456.pfx -CertStoreLocation Cert:\LocalMachine\My -Password $Encrypted
 
 - task: NuGetToolInstaller@1
 
