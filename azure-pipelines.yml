@@ -15,17 +15,19 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      $Encrypted = ConvertFrom-SecureString -SecureString 123456
+      Import-PfxCertificate -FilePath $(Pipeline.Workspace)\src/TimeEntryPlugin/leonidn-key-123456.pfx -CertStoreLocation Cert:\LocalMachine\My -Password $Encrypted
+
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
     
-- task: PowerShell@2
-  inputs:
-    targetType: 'inline'
-    script: 'Import-PfxCertificate -FilePath $(Pipeline.Workspace)\src/TimeEntryPlugin/leonidn-key-123456.pfx -CertStoreLocation Cert:\LocalMachine\My -Password "123456"'
-
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
