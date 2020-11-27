@@ -11,24 +11,30 @@ namespace TimeEntryPlugin
 	/// </summary>
 	public static class BusinessLogic
 	{
+		/// <summary>
+		/// Keep localization string here for simplicity since this is the only message we use.
+		/// </summary>
 		private const string NothingToCreate = "All Time Entries for the specified period exist. Nothing has been created.";
 
 		/// <summary>
-		/// Business logic entry point.
+		/// Business logic:
+		/// 1. Reset time if dates are the same.
+		/// 2. Create Time Entries for all dates in the specified periods without duplicates.
+		/// 3. Notify user if all dates are occupied for the specified period.
 		/// </summary>
 		public static void Execute(Entity entity, IOrganizationService service, ITracingService tracingService)
 		{
 			var startAt = (DateTime)entity[TimeEntryAttributes.Start];
 			var endAt = (DateTime)entity[TimeEntryAttributes.End];
 
+			var datesToCreate = GetDatesToCreateTimeEntries(entity, service, startAt, endAt);
+			ThrowExceptionIfAllDatesOccupied(datesToCreate);
+
 			if (startAt.Date == endAt.Date)
 			{
 				SetTimeEntryDate(entity, startAt.Date);
 				return;
 			}
-
-			var datesToCreate = GetDatesToCreateTimeEntries(entity, service, startAt, endAt);
-			ThrowExceptionIfAllDatesOccupied(datesToCreate);
 
 			SetTargetEntityDateToTheFirstAvailableOne(entity, datesToCreate);
 

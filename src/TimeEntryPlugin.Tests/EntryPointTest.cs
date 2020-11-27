@@ -19,29 +19,13 @@ namespace TimeEntryPlugin.Tests
 		[DataRow("20100630", "20100630", new string[] { }, 0, DisplayName = "In event when the start and end dates are different, than no additional entries created")]
 		public void Should_CreateAdditionalEntries_When_PeriodIncludesMoreThan2NotBookedDates(string startAtStr, string endAtStr, string[] bookedDatesStrings, int additionalEntriesNumber)
 		{
-			var startAt = DateTime.ParseExact(startAtStr, "yyyyMMdd", CultureInfo.InvariantCulture);
-			var endAt = DateTime.ParseExact(endAtStr, "yyyyMMdd", CultureInfo.InvariantCulture);
+			var startAt = ParseTestInputDateTime(startAtStr);
+			var endAt = ParseTestInputDateTime(endAtStr);
 			var bookedDates = bookedDatesStrings
-				.Select(x => DateTime.ParseExact(x, "yyyyMMdd", CultureInfo.InvariantCulture)).ToList();
+				.Select(x => ParseTestInputDateTime(x)).ToList();
 
 			// Arrange
-			var fakedContext = new XrmFakedContext();
-
-			var bookableResource = new EntityReference(TimeEntryAttributes.BookableResource, Guid.NewGuid());
-			var timeEntry = CreateTimeEntry(startAt, endAt, bookableResource);
-
-			var inputParameter = new ParameterCollection();
-			inputParameter.Add("Target", timeEntry);
-
-			var pluginContext = fakedContext.GetDefaultPluginContext();
-			pluginContext.Stage = 20;
-			pluginContext.MessageName = "Create";
-			pluginContext.PrimaryEntityName = TimeEntryAttributes.EntityName;
-			pluginContext.PrimaryEntityId = timeEntry.Id;
-			pluginContext.InputParameters = inputParameter;
-
-			var existingEntries = bookedDates.Select(x => CreateTimeEntry(x, x, bookableResource)).ToList();
-			fakedContext.Initialize(existingEntries);
+			var fakedContext = CreateTimeEntryInContext(startAt, endAt, bookedDates, out var timeEntry, out var existingEntries);
 
 			// Act
 			fakedContext.ExecutePluginWithTarget(new EntryPoint(), timeEntry);
@@ -60,11 +44,44 @@ namespace TimeEntryPlugin.Tests
 			}
 		}
 
-		[TestMethod]
-		[ExpectedException(typeof(InvalidPluginExecutionException))]
-		public void Should_ThrowException_When_AllEntriesForPeriodBooked()
+		[DataTestMethod]
+		[DataRow("20100630", "20100702", new[] { "20100630", "20100701", "20100702" })]
+		[DataRow("20100630", "20100630", new[] { "20100630" })]
+		public void Should_ThrowException_When_AllEntriesForPeriodOccupied(string startAtStr, string endAtStr, string[] bookedDatesStrings)
 		{
-			Should_CreateAdditionalEntries_When_PeriodIncludesMoreThan2NotBookedDates("20100630", "20100702", new[] { "20100630", "20100701", "20100702" }, 0);
+			var startAt = ParseTestInputDateTime(startAtStr);
+			var endAt = ParseTestInputDateTime(endAtStr);
+			var bookedDates = bookedDatesStrings
+				.Select(ParseTestInputDateTime).ToList();
+
+			// Arrange
+			var fakedContext = CreateTimeEntryInContext(startAt, endAt, bookedDates, out var timeEntry, out _);
+
+			// Act & Assert
+			Assert.ThrowsException<InvalidPluginExecutionException>(() => fakedContext.ExecutePluginWithTarget(new EntryPoint(), timeEntry));
+		}
+
+		private static DateTime ParseTestInputDateTime(string x) => DateTime.ParseExact(x, "yyyyMMdd", CultureInfo.InvariantCulture);
+
+		private static XrmFakedContext CreateTimeEntryInContext(DateTime startAt, DateTime endAt, 
+			List<DateTime> bookedDates, out Entity timeEntry, out List<Entity> existingEntries)
+		{
+			var fakedContext = new XrmFakedContext();
+			var bookableResource = new EntityReference(TimeEntryAttributes.BookableResource, Guid.NewGuid());
+			timeEntry = CreateTimeEntry(startAt, endAt, bookableResource);
+
+			var inputParameter = new ParameterCollection {{"Target", timeEntry}};
+
+			var pluginContext = fakedContext.GetDefaultPluginContext();
+			pluginContext.Stage = 20;
+			pluginContext.MessageName = "Create";
+			pluginContext.PrimaryEntityName = TimeEntryAttributes.EntityName;
+			pluginContext.PrimaryEntityId = timeEntry.Id;
+			pluginContext.InputParameters = inputParameter;
+
+			existingEntries = bookedDates.Select(x => CreateTimeEntry(x, x, bookableResource)).ToList();
+			fakedContext.Initialize(existingEntries);
+			return fakedContext;
 		}
 
 		private static Entity CreateTimeEntry(DateTime startAt, DateTime endAt, EntityReference bookableResource)
